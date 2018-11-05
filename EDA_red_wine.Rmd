@@ -1,0 +1,758 @@
+---
+output:
+  html_document: default
+  pdf_document: default
+---
+Red Wine Quality EDA - Angelica Zhang
+========================================================
+```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
+# Load all of the packages that you end up using
+# in your analysis in this code chunk.
+
+# Notice that the parameter "echo" was set to FALSE for this code chunk.
+# This prevents the code from displaying in the knitted HTML output.
+# You should set echo=FALSE for all code chunks in your file.
+
+```
+
+
+```{r}
+# load the ggplot package 
+library(ggplot2)
+library(GGally)
+library(scales)
+library(memisc)
+library(ggcorrplot)
+getwd()
+setwd('/Users/tianlingmengyu/Documents/R')
+
+wine <- read.csv("wineQualityReds.csv")
+```
+
+
+Summary of the Data Set
+```{r}
+names(wine)
+```
+```{r}
+str(wine)
+```
+```{r}
+summary(wine)
+```
+```{r}
+length(wine$X)
+```
+
+
+
+```{r}
+#remove the X column
+wine <- subset(wine, select = -c(X))
+```
+
+### What is the structure of your dataset?
+```{r}
+# Univariate Plots Section
+
+univariate_plot <- function(varname) {
+  return(ggplot(aes(x = varname), data = wine) +
+           geom_histogram() +
+           xlab(varname))
+  return(summary(varname))
+}
+
+##fixed.acidity
+univariate_plot(wine$fixed.acidity) + xlab('fix.acidity')
+```
+
+
+```{r}
+summary(wine$fixed.acidity)
+```
+
+fixed acidity: most acids involved with wine or fixed or nonvolatile (do not evaporate readily)
+
+Most wine in this dataset have fixed.acidity between 4.60 to 15.90, median 7.90 and mean 8.32.
+
+
+```{r}
+##volatile.acidity
+univariate_plot(wine$volatile.acidity) + xlab('volatile.acidity')
+```
+```{r}
+summary(wine$volatile.acidity)
+```
+
+volatile acidity: the amount of acetic acid in wine, which at too high of levels can lead to an unpleasant, vinegar taste
+
+Wine in the dataset have volatile.acidity between 0.1200 to 1.5800,if the amount of acetic acid in wine, which at too high of levels can lead to an unpleasant, vinegar taste, so most volatile.acidity is lower than 0.8
+
+```{r}
+##citric.acid
+univariate_plot(wine$citric.acid) + xlab('citric.acid')
+```
+
+Adjust the binwidth in order to find more details
+
+```{r}
+ggplot(aes(x = citric.acid), data = wine) +
+  geom_histogram(binwidth = 0.01)
+```
+
+citric acid: found in small quantities, citric acid can add 'freshness' and flavor to wines.
+
+The  Vinho Verde wine is known by the fresh taste.So, we can found the citric acid in most wine.
+
+
+```{r}
+summary(wine$citric.acid)
+```
+
+Found in small quantities, citric acid can add 'freshness' and flavor to wines.So reset the binwidth to have a look at.The largest peak is 0.
+
+
+```{r}
+##residual.sugar histogram
+univariate_plot(wine$residual.sugar) + xlab('residual.sugar')
+```
+```{r}
+summary(wine$residual.sugar)
+```
+
+residual.sugar is one of the most import feature to category the red wine.
+Most wine are less than 4 g/dm^3,which means most of wine in this dataset is dry type wine.
+
+
+```{r}
+##chlorides histogram
+univariate_plot(wine$chlorides) + xlab('chlorides')
+```
+
+Adjust the binwidth and x scale in order to see the majority of the chlorides factor
+```{r}
+##chlorides histogram adjusted
+ggplot(aes(x = chlorides), data = wine) +
+  geom_histogram(binwidth = 0.005) +
+  scale_x_continuous(limits = c(0,quantile(wine$chlorides,0.95)))
+```
+```{r}
+summary(wine$chlorides)
+```
+
+
+The minimum is 0.012, median is 0.079, mean is 0.874, the max is 0.611, majority is between 0.025 to 0.125.
+
+
+```{r}
+##free.sulfur.dioxide histogram
+univariate_plot(wine$free.sulfur.dioxide) + xlab('free.sulfur.dioxide')
+```
+```{r}
+summary(wine$free.sulfur.dioxide)
+```
+
+free sulfur dioxide: the free form of SO2 exists in equilibrium between molecular SO2 (as a dissolved gas) and bisulfite ion; it prevents microbial growth and the oxidation of wine
+
+
+```{r}
+##total.sulfur.dioxide histogram
+univariate_plot(wine$total.sulfur.dioxide) + xlab('total.sulfur.dioxide')
+```
+```{r}
+summary(wine$total.sulfur.dioxide)
+```
+ 
+ total sulfur dioxide: amount of free and bound forms of S02; in low concentrations, SO2 is mostly undetectable in wine, but at free SO2 concentrations over 50 ppm, SO2 becomes evident in the nose and taste of wine
+
+
+so,adjust the x scale
+
+```{r}
+
+wine$sulfur.bucket[wine$total.sulfur.dioxide >= 50] <- 'sulfur_above_50'
+wine$sulfur.bucket[wine$total.sulfur.dioxide < 50] <- 'sulfur_below_50'
+##total.sulfur.dioxide histogram
+ggplot(aes(x = total.sulfur.dioxide,color = sulfur.bucket), data = wine) +
+  geom_histogram(binwidth = 1) +
+  facet_wrap(~sulfur.bucket) +
+  scale_x_continuous(limits = c(0,200))
+```
+
+ 
+
+```{r}
+##pH histogram
+univariate_plot(wine$pH) + xlab('pH')
+```
+```{r}
+summary(wine$pH)
+```
+
+Normally, red wine ph between 3.3 to 3.8.
+The red wine in the dataset comes from Portugal, where the light is not very strong, so the wine has a lower pH value than the wine in Australia, we can see the same trend in the pH chart.
+
+```{r}
+##sulphates histogram
+univariate_plot(wine$sulphates) + xlab('sulphates')
+```
+```{r}
+summary(wine$sulphates)
+```
+
+
+```{r}
+##alcohol histogram
+univariate_plot(wine$alcohol) + xlab('alcohol')
+```
+
+According to wikipedia, we will know that the alcohol for Vinhos Verdes is between 8.4 to 14,
+we can see the same distribution in the histogram chart.
+
+```{r}
+summary(wine$alcohol)
+```
+```{r}
+##density histogram
+univariate_plot(wine$density) + xlab('density')
+```
+
+
+The density of water is about 1.0 (g / cm^3), and the density of acohol is 0.789 (g / cm^3), according the alcohol distribution chart, we can theorize about the distribution here, and we can find the same trend in the density chart.
+```{r}
+summary(wine$density)
+```
+
+
+
+```{r}
+##quality histogram
+ggplot(aes(x = quality), data = wine) +
+  geom_bar()
+```
+
+
+Even the quality score is 0 to 10, but most wine in this dataset have quality between 3 to 8, and nearly normal distribution.The majority between 5 to 6.
+
+```{r}
+summary(wine$quality)
+```
+```{r}
+dim(subset(wine,quality==5|quality ==6))/dim(wine)
+```
+
+Wine of score 5 and 6 is the majority, and 82.5% of the wine in dataset.
+
+
+```{r}
+
+#set the seed for reproducible results
+set.seed(10433)
+ggcorr(wine,
+       method = c('all.obs','spearman'),
+       nbreaks = 5,palette = 'PuOr',label = TRUE,
+       names = 'spearman correlation coeffience',
+       hjust = 0.9, angle = -70,size = 3) +
+  ggtitle('Spearman Correlation coefficient Matirx')
+```
+
+
+# Univariate Analysis
+
+
+
+### main feature(s) of interest in your dataset
+quality
+
+### other features in the dataset will help to investigation into your feature(s) of interest
+
+fixed.acidity
+citric.acid
+residual.sugar
+alcohol
+
+
+
+```{r}
+#create the quality.bucket to category the quality 
+wine$quality.bucket[wine$quality < 9] <- 'Great'
+wine$quality.bucket[wine$quality < 7] <- 'Good'
+wine$quality.bucket[wine$quality < 4] <- 'Bad'
+
+```
+
+Category the quality to 3 types :
+
+0-3 Bad/
+4-6 Good/
+7-10 Great/
+
+
+```{r}
+##fixed.acidity vs. quality
+ggplot(aes(x = fixed.acidity, y = quality), 
+       data = wine) +
+  geom_jitter(alpha = 0.5, color = "#2E70B2", fill = "#6FA9E2") +
+  geom_smooth(method=lm, se=FALSE, color = 'black')
+  
+```
+
+
+In the frist case, I thought the fixed.acidity will show some trend, because I heard the specialist will perfer acidity taste than sugar taste.
+
+But according to the plot, we can find there is no clear relationship.
+
+
+```{r}
+## citric.acid vs. quality
+ggplot(aes(x = citric.acid, y = quality), 
+       data = wine) +
+  geom_jitter(alpha = 0.5, color = "#2E70B2", fill = "#6FA9E2") +
+  geom_smooth(method=lm, se=FALSE, color = 'black')
+```
+
+
+As we can see, there is no clear trend between citric.acid and quality.
+
+
+
+Red wine is divided into dry, semi dry, semi sweet and sweet because of residual.sugar,so we category the residual.sugar to hava a look at.
+
+```{r}
+##category the residual.sugar 
+wine$sugar_taste[wine$residual.sugar < 45] <- 'Semi-Sweet'
+wine$sugar_taste[wine$residual.sugar < 12] <- 'Semi-Dry'
+wine$sugar_taste[wine$residual.sugar < 4] <- 'Dry'
+
+```
+
+
+Category the quality to 3 types :
+
+0-3 g/dm^3          Dry /
+4-12 g/dm^3         Semi-Dry /
+12-45 g/dm^3        Great /
+
+
+Because the point numbers are much less than points in fixed.acidity vs. quality chart, so change jitter to show the point postion.
+
+
+```{r}
+##residual.sugar vs. quality
+ggplot(aes(x = residual.sugar, y = quality),
+       data = wine) +
+  geom_jitter(alpha = 0.5, color = "#2E70B2", fill = "#6FA9E2") +
+  geom_smooth(method=lm, se=FALSE, color = 'black')
+```
+
+
+As we can see in the residual.sugar vs. quality chart,the most wine is below 4（g / dm ^ 3), but in this part of wine get quality score from 3 to 8,so there is no clear relationship between residual.sugar and quality.
+
+
+
+
+```{r}
+## alcohol vs. quality
+ggplot(aes(x = alcohol, y = quality), 
+       data = wine) +
+  geom_jitter(alpha = 0.5, color = "#2E70B2", fill = "#6FA9E2") +
+  geom_smooth(method=lm,color = 'black',se = FALSE)
+  
+  
+```
+
+
+One important factor for wine is the grapes,the quality of the grapes is the fundamental of making wine, during the production, the sugar in grapes is converted into alcohol. So the alcohol will measure the quality of the grapes in that year.That is the reason why to choose alcohol to be the main factor to investigate quality.
+
+
+```{r}
+##alcohol vs. quality.bucket 
+ggplot(aes(x = quality.bucket, y = alcohol), 
+       data = wine) + 
+  geom_boxplot()
+```
+
+use boxplot to show the relationship between alcohol and quality.bucket
+We can see the trend that the 'Great' wine have more alcohol index.
+
+
+```{r}
+## quality.bucket vs. fixed.acidity
+ggplot(aes(x = quality.bucket, y = fixed.acidity), 
+       data = wine) + 
+  geom_boxplot()
+```
+
+use boxplot to show the relationship between fixed.acidity and quality.bucket
+We can see the trend that the 'Great' wine have more fixed.acidity index.
+
+
+##Other feature with strong correlation
+
+从之前的相关性对比图中找到与质量特征没有关系，但相对关系很强的特征
+
+```{r}
+##fixed.acidity vs. density and color
+ggplot(aes(x = fixed.acidity, y = density), 
+       data = wine) +
+  geom_jitter(alpha = 0.5,color = "#2E70B2", fill = "#6FA9E2") +
+  geom_smooth(method=lm,se = FALSE, color = 'black')
+
+```
+
+Use scatterplot to see the relationship between fixed.acidity and density, and we can see pretty strong positive correlation.
+
+```{r}
+cor.test(wine$fixed.acidity,wine$density)
+```
+
+Pearson's product-moment correlation show the same trend, and an exact number 0.6680473
+
+```{r}
+##fixed.acidity vs. pH and color 
+ggplot(aes(x = pH, y = fixed.acidity), 
+       data = wine) +
+  geom_jitter(alpha = 0.5 , color = "#2E70B2", fill = "#6FA9E2")  +
+  geom_smooth(method=lm,se = FALSE, color ='black')
+```
+
+
+Use scatterplot to see the relationship between fixed.acidity and pH, and we can see pretty strong negative correlation.
+
+```{r}
+cor.test(wine$fixed.acidity,wine$pH)
+```
+
+Pearson's product-moment correlation show the same trend, and an exact number -0.6829782 
+
+
+```{r}
+##free.sulfur.dioxide vs. total.sulfur.dioxide 
+ggplot(aes(x = free.sulfur.dioxide, y = total.sulfur.dioxide), 
+       data = wine) +
+  geom_jitter(alpha = 0.5, color = "#2E70B2", fill = "#6FA9E2") +
+  geom_smooth(method=lm,se = FALSE, color ='black')
+```
+
+
+Use scatterplot to see the relationship between free.sulfur.dioxide and total.sulfur.dioxide, and we can see pretty strong negative correlation.
+
+
+```{r}
+cor.test(wine$free.sulfur.dioxide,wine$total.sulfur.dioxide)
+```
+
+
+Pearson's product-moment correlation show the same trend, and an exact number 0.6676665
+
+
+
+```{r}
+##fixed.acidity vs. citric.acid 
+ggplot(aes(x = fixed.acidity, y = citric.acid), 
+       data = wine) +
+  geom_jitter(alpha = 0.5, color = "#2E70B2", fill = "#6FA9E2") +
+  geom_smooth(method=lm,se = FALSE, color ='black')
+```
+
+
+Use scatterplot to see the relationship between fixed.acidity and citric.acidity, and we can see pretty strong positive correlation.
+
+
+
+```{r}
+cor.test(wine$citric.acid,wine$fixed.acidity)
+```
+
+
+Pearson's product-moment correlation show the same trend, and an exact number 0.6717034, and this number is the most so far.
+
+
+
+# Bivariate Analysis
+
+### Talk about some of the relationships you observed in this part of the investigation. How did the feature(s) of interest vary with other features in the dataset?
+Opposide of what I thoght before, citric.acid, fixed.acidity, residual.sugar , do not have strong correlation with quality, but alcohol show a little positive trend with quality.
+
+
+### Did you observe any interesting relationships between the other features (not the main feature(s) of interest)?
+- fixed.acidity and citric.acid
+These two feature are from the grapes, and we can taste in the wine.
+
+_ free.sulfur.dioxide and total.sulfur.dioxide
+
+- fixed.acidity and density
+
+_ fixed.acidity and pH
+
+
+### What was the strongest relationship you found?
+
+The strongest relationship is fixed.acidity vs. pH
+  -0.6829782
+
+
+
+
+
+####Multivariate Analysis
+
+```{r}
+##fixed.acidity vs. pH and color by quality.bucket
+ggplot(aes(x = pH, y = fixed.acidity, color = quality.bucket), 
+       data = wine) +
+  geom_jitter() +
+  coord_cartesian() +
+  scale_color_brewer(type = "seq")+
+  geom_smooth(method=lm,se=FALSE)
+  
+```
+
+从图中所有点的走向来看，正如之前的Bivariate Analysis 一样，成反比例的趋势。
+使用了quality.bucket做分类，并没有发现类别不同的点之间的共同趋势
+
+
+
+```{r}
+##fixed.acidity vs. density and color by quality.bucket
+ggplot(aes(x = density, y = fixed.acidity, color = quality.bucket), 
+       data = wine) +
+  geom_jitter() +
+  coord_cartesian() +
+  scale_color_brewer(type = "seq") +
+  scale_y_continuous(limits = c(0,16)) +
+  geom_smooth(method=lm,se=FALSE)
+```
+
+
+The chart is the correlation between density and fixed.acidity, color the points by quality.bucket, and we can see the layers in three types.The great quality wine have lightly more density than the bad one.
+
+
+```{r}
+##free.sulfur.dioxide vs. total.sulfur.dioxide and color by quality.bucket
+ggplot(aes(x = free.sulfur.dioxide, y = total.sulfur.dioxide, 
+           color = quality.bucket), 
+       data = wine) +
+  geom_jitter(alpha = 0.5) +
+  coord_cartesian() +
+  scale_color_brewer(type = "seq") +
+  geom_smooth(method=lm,se=FALSE)
+```
+
+在之前Bivariate Analysis部分探索过两者的关系，如今用quality.bucket做颜色分类，没有发现明显趋势
+
+
+```{r}
+##fixed.acidity vs. citric.acid and color by quality.bucket
+ggplot(aes(x = fixed.acidity, y = citric.acid,
+           color = quality.bucket), 
+       data = wine) +
+  geom_jitter() +
+  coord_cartesian() +
+  scale_color_brewer(type = "seq") +
+  geom_smooth(method=lm,se=FALSE)
+```
+
+在之前Bivariate Analysis部分探索过两者的关系，如今用quality.bucket做颜色分类，没有发现明显趋势
+
+```{r}
+##alcohol vs. density and color by quality.bucket
+ggplot(aes(x = alcohol, y = fixed.acidity, color = quality.bucket), 
+       data = wine) +
+  geom_jitter() +
+  coord_cartesian() +
+  scale_color_brewer(type = "seq") +
+  geom_smooth(method=lm,se=FALSE)
+```
+
+
+在之前Bivariate Analysis部分探索过两者的关系，如今用quality.bucket做颜色分类，没有发现明显趋势
+
+
+```{r}
+##alcohol vs. residual.sugar and color by quality.bucket
+ggplot(aes(x = alcohol, y = residual.sugar, color = quality.bucket), 
+       data = wine) +
+  geom_jitter() +
+  coord_cartesian() +
+  scale_color_brewer(type = "seq") +
+  geom_smooth(method=lm,se=FALSE)
+```
+
+在之前Bivariate Analysis部分探索过两者的关系，如今用quality.bucket做颜色分类，没有发现明显趋势
+
+```{r}
+##alcohol vs. density and color by quality.bucket
+ggplot(aes(x = alcohol, y = density, color = quality.bucket), 
+       data = wine) +
+  geom_jitter() +
+  coord_cartesian() +
+  scale_color_brewer(type = "seq") +
+  geom_smooth(method=lm,se=FALSE)
+```
+
+
+在之前Bivariate Analysis部分探索过两者的关系，如今用quality.bucket做颜色分类，没有发现明显趋势
+
+# Multivariate Analysis
+
+When we color by quality.bucket,  we can see the layers of these feature, how they strength each other or not.
+
+The most interesting group is fixed.acidity vs. density, we already see the strong correlation earlier.
+
+Now, we can not only see the clear trend, but also we can see how to score a wine better quality.
+
+
+```{r}
+##alcohol vs. quality.bucket and color by sugar_taste
+ggplot(aes(x = quality.bucket, y = alcohol, color = sugar_taste), 
+       data = wine) + 
+  geom_boxplot()
+```
+
+
+在Dry和Semi-Dry两种类别的酒，酒精随着质量评定的升高而略有升高
+
+
+```{r}
+##fixed.acidity vs. quality.bucket and color by sugar_taste
+ggplot(aes(x = quality.bucket, y = fixed.acidity, color = sugar_taste), 
+       data = wine) + 
+  geom_boxplot()
+```
+
+使用了sugar_taste做颜色分类之后，没有发现明显趋势
+
+
+```{r}
+##residual.sugar vs. quality.bucket and color by sugar_taste
+ggplot(aes(x = quality.bucket, y = residual.sugar, color = sugar_taste), 
+       data = wine) + 
+  geom_boxplot()
+```
+
+
+Now put the sugar_taste category into the residual.sugar vs. quality category chart, we can find except only 'Good' type have 'Semi-sweet' type wine, other two types of wine, in 'Dry' and 'Semi-Dry', we can see the positive trend between residual.sugar and quality.
+
+
+
+
+
+
+
+# Final Plots and Summary
+
+### Plot One
+```{r echo=FALSE, Plot_One}
+ggplot(aes(x = quality), data = wine) +
+  geom_bar(binwidth = 0.5, alpha=0.2, 
+                 color = "#2E70B2", fill = "#6FA9E2") +
+  ggtitle('The Distribution Of Quality')
+```
+
+### Description One
+The distribution of quality in this chart, 82.5% is in the range 5 to 6.
+
+### Plot Two
+```{r echo=FALSE, Plot_Two}
+## quality.bucket vs. alcohol
+ggplot(aes(x = quality.bucket, y = alcohol), 
+       data = wine) + 
+  geom_boxplot(alpha=0.2, color = "#2E70B2", fill = "#6FA9E2") +
+  stat_summary(fun.y='median', geom='point', color='blue',shape = 4) +
+  ggtitle('Quality.Bucket vs. Alcohol') +
+  xlab('quality category') +
+  ylab('alcohol (% by volume)')
+```
+
+The chart is category by quality and we can find the alcohol trend in three different types of quality.The greate wine have clearly more alcohol, that means the grades of great score wine get more light and accumulate more sugar than the bad one.
+
+葡萄在生长期接受阳光的照射，在葡萄果实里产生果糖，然后果糖在酿酒的过程中会转换成为酒精alcohol，没有完全转化为酒精的果糖，会留在酒液里成为残糖residual.sugar，所以一般来说，在残糖residual.sugar相同的情况下，其他条件完全一致的情况下，我们可以从酒精度来反推果实的成熟度（果糖含量）。而果实的成熟度是鉴定酒质量非常非常重要的标准。果实的成熟度越高，果糖更高，酒精度就会更高；反之，果糖比较低，酒精度就会比较低。葡萄牙的北部是个相对寒冷的产区，葡萄生长期接受的阳光不多，所以红酒的酒精度在资料里一般不会很高，在之前的酒精度的柱状图中可以看到是8.4- 14.9的区间，但是像是澳大利亚这种阳光充沛的新产区，如果在酿酒时不加干涉的话，酒精度会明显高于这个区间。（当然没人想喝这样的酒）
+
+果实的成熟度左右了葡萄酒的大年和小年之分。大年就是葡萄成熟的非常好的年份，这些年份的葡萄酒评分一般都会高；而小年是葡萄成熟不太好的年份，最有可能的情况是光照不足，或者病虫灾害，冰雹雨雪天气等等，使得葡萄里的糖分不高，于是酿酒之后，酒的评分表现不好。
+
+我在这里sugar不是指残糖，而是指的是葡萄中的果糖。
+
+所以我认为，对于Vinho_Verde这种产自葡萄牙北部、酿造方法简单的酒，酒中的alcohol可以侧面发现这一年或者这一产区葡萄的成熟度。
+
+
+
+
+```{r}
+## residual.sugar vs.quality.bucket and color by sugar_taste
+ggplot(aes(x = quality.bucket, y = residual.sugar,
+           color = sugar_taste), 
+       data = wine) + 
+  geom_boxplot() +
+  ggtitle('Residual.Sugar vs.Quality.Bucket And Color By Sugar_taste') +
+  xlab('Quality Category') +
+  ylab('Residual.Sugar(g/dm^3)')
+```
+
+从图中可以看出，'Dry'和'Semi-Dry'两种酒的类型中，residual.sugar的中位数，随着质量评价的升高而有所升高。即，residual.sugar的含量和质量评级有相关性。
+
+
+
+### Plot Three
+
+```{r echo=FALSE, Plot_Three}
+##fixed.acidity vs. density and color by quality.bucket
+ggplot(aes(x = density, y = fixed.acidity, color = quality.bucket), 
+       data = wine) +
+  geom_jitter() +
+  coord_cartesian() +
+  scale_color_brewer(type = "seq") +
+  geom_smooth(method=lm,se=FALSE) +
+  ggtitle('Fixed.acidity vs. Density And Color By Quality.Bucket') +
+  xlab('density(g/cm^3)') +
+  ylab('fixed.acidity(g/cm^3)') 
+```
+
+
+### Description Three
+
+density 和 fixed.acidity呈线性正相关，随着fixed.acidity的升高，density也有升高的趋势，加入质量分组之后，可以看到随着fixed.acidity的升高，高质量的葡萄酒有所增加，而density对质量影响不大（因为质量是在垂直风向上提高的）。
+
+
+
+# Reflection
+这个数据集中，很难从单个特征直接判断更高评分的酒会是怎样的,我们只能轻微看出一些趋势。
+
+其实葡萄酒的质量如何，在这个数据集中更确切得说是3位专家打的分数如何，并不仅仅是里面的化学成分是所完全决定的。
+
+其中有一项为残糖量，但是酿造工艺的不同，会导致检测有相同残糖的两瓶酒，会得到非常不同的评价。因为有些地方像是加拿大会延迟采摘葡萄的时间让糖分沉淀；而有些地方的酿造工艺中是会人为二次添加糖分；而有些地方会人为中止发酵，让糖分不完全转化成酒精。这就意味着其实可以从市面上找到酒精度、pH值、糖分残留等化学物质指数非常相似的产品，但是风味和口感上面会相差千里，尤其对于不同的葡萄品种来说，通过酿造工艺给酒添加更加不同却十分和谐的‘风味’是评价一瓶酒好坏很重要的一个指标。（因为评价一瓶酒不仅会从结果上面来评价，也会从酿酒师解决问题的工艺来评价酒）
+
+
+比如有两瓶酒都为13度的酒精度，口感都是中高酸度，ph也差不多，但是一个会出现接骨木花、蔓越莓、山楂糕、汽油的香气，另外一个会出现紫罗兰、野桑葚、野蓝莓、马厩的气息。品鉴葡萄酒时会从颜色、气味、口感来判断葡萄酒质量的好坏，而气味和风味口感还分为葡萄品种本身带来的不同、生长期的环境的不同、酿造工艺和过程赋予的香气不同。在这个数据集里，我们并不知道葡萄的品种，也没有告知是具体年份，和酿造工艺，而数据集中的特征还没有办法能判断出这些来。
+
+
+品鉴一瓶葡萄酒的时候，有四个比较主要的因素：质感厚度，风味强度，涩度，酸度。但是这些因素都是从感官角度上出发，很难将化学成分与这些因素结合起来，比如质感厚度包含了哪几个化学成分。如果能知道这些化学成分在专家评价葡萄酒的时候占了多少的比重，可能会让这个分析变得更清晰。这一点需要数据分析相关人员和品鉴葡萄酒的专家深度合作，将这种感官体验和定量分析中的量化指标相结合。
+
+
+
+另外葡萄酒的好坏，其实有很大程度上是非常主观的。比如刚接触葡萄酒或者喜欢甜点的人会更偏好甜型酒，比如晚收，低醇甜白低泡，或者是贵腐。即使这些酒更易饮，也广受好评，但是在专家的眼里，这些是上不了台面的，他们会觉得会品鉴高酸，才算是专业的体现，所以甜型酒和半甜型酒一直都获得市场的认可，但是却没有获得专业的褒奖。所以，从这一点看，也许应该用更细分的方式，将葡萄酒的品鉴标准量化，制定清晰的标准，因为到目前为止，这还是一个高度主观的行业。
+
+
+挫败：
+
+我不知道如何将品鉴葡萄酒的感官体验用化学成分量化的方法体现出来
+
+而且我在做的时候，并不知道寻常评定葡萄酒质量的几个指标，在这个数据集里是如何分配比重的，因为这个酒不能陈年，是新鲜易饮的，而且单个特征与质量之间没有明显趋势，于是我就在考虑是不是存在一个模型，但是我目前还不会建模。
+
+成功发现的部分：
+
+plot two 的第二张图，Residual Sugar vs. Quality.Bucket 发现如果评价更高，葡萄酒中残糖会略有升高。我认为这可能是由于这批酒产自葡萄牙北部，影响葡萄酒品质最严重的因素就在于葡萄可能在生长期时没有得到足量的光照而带有尖酸和高酸，而酒液中适度的残糖可以中和酸度，让酒液更柔顺，所以会带来更高的评分。
+
+
+
+
+特别要指出来的一点是：
+
+正如之前我所说过的，葡萄酒的品鉴是个高度主观的事情，这个数据集里的红酒质量，更确切得说是3位专家打的分数如何，其实是会随着专家的口味偏好不同而高低起伏，所以，这个数据集准确来说，并不是在衡量红酒质量如何，不是去找红酒质量评分与化学成分的相关关系。准确来说，这个数据集其实是找到了打分的三位专家的口味偏好。
+
+
+
+##Reference
+
+- https://en.wikipedia.org/wiki/Vinho_Verde
+- Paulo Cortez (Univ. Minho), Antonio Cerdeira, Fernando Almeida, Telmo Matos and Jose Reis (CVRVV) @ 2009
